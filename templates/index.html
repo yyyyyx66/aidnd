@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DND AI助手</title>
+    <!-- 添加 Markdown 渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        #chat-container {
+            height: 600px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 80%;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            color: #1565c0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .ai-message {
+            background-color: #f8f9fa;
+            margin-right: auto;
+            color: #333;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .ai-message p {
+            margin: 0 0 10px 0;
+        }
+        .ai-message ul, .ai-message ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        #input-container {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        #user-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        button {
+            padding: 12px 25px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .role-indicator {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>DND AI助手</h1>
+    <div id="chat-container"></div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="输入你的消息...">
+        <button onclick="sendMessage()">发送</button>
+    </div>
+
+    <script>
+        function formatTimestamp() {
+            const now = new Date();
+            return now.toLocaleTimeString('zh-CN');
+        }
+
+        function addMessage(message, isUser) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+
+            // 添加时间戳
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'timestamp';
+            timestampDiv.textContent = formatTimestamp();
+            messageDiv.appendChild(timestampDiv);
+
+            // 添加角色标识
+            const roleDiv = document.createElement('div');
+            roleDiv.className = 'role-indicator';
+            roleDiv.textContent = isUser ? '玩家' : 'DM';
+            messageDiv.appendChild(roleDiv);
+
+            // 添加消息内容（使用Markdown渲染）
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            if (isUser) {
+                contentDiv.textContent = message;
+            } else {
+                contentDiv.innerHTML = marked.parse(message);
+            }
+            messageDiv.appendChild(contentDiv);
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                addMessage(message, true);
+                input.value = '';
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+                    
+                    const data = await response.json();
+                    addMessage(data.response, false);
+                } catch (error) {
+                    addMessage('抱歉，发生了错误，请稍后再试。', false);
+                }
+            }
+        }
+
+        // 支持按回车发送消息
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html> 
